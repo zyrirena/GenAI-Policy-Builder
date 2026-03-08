@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GenAI Policy Builder — NIST AI RMF</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0d0f14;
+  --paper: #f5f3ee;
+  --paper2: #ede9e1;
+  --paper3: #e3ddd3;
+  --rule: #d4ccbc;
+  --muted: #8a8070;
+  --deep: #1e1a14;
+  --gov-c: #1a3a5c;
+  --map-c: #1a4a30;
+  --mea-c: #4a2a0a;
+  --man-c: #3a1a4a;
+  --gov-bg: #e8f0f8;
+  --map-bg: #e4f2e8;
+  --mea-bg: #f8ede0;
+  --man-bg: #f0e8f8;
+  --gov-border: #b8d0e8;
+  --map-border: #b0d8bc;
+  --mea-border: #e8c8a0;
+  --man-border: #d0b8e8;
+  --red: #c0392b;
+  --amber: #d68910;
+  --green: #1e8449;
+  --accent: #c0392b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;
+  font-size:14px;
+  line-height:1.65;
+  min-height:100vh;
+}
+
+/* NOISE TEXTURE OVERLAY */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity:0.4;
+}
+
+/* TOP RULE */
+.top-rule{height:4px;background:repeating-linear-gradient(90deg,var(--ink) 0,var(--ink) 8px,transparent 8px,transparent 16px);}
+
+/* HEADER */
+header{
+  background:var(--ink);color:var(--paper);
+  padding:0 40px;height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:4px;z-index:100;
+}
+.logo-wrap{display:flex;align-items:center;gap:16px;}
+.logo-badge{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.15em;
+  background:var(--paper);color:var(--ink);padding:4px 10px;border-radius:2px;
+  font-weight:500;
+}
+.logo-title{font-family:'Playfair Display',serif;font-size:17px;letter-spacing:0.02em;color:var(--paper);}
+nav{display:flex;gap:2px;}
+nav button{
+  background:none;border:none;color:rgba(245,243,238,0.5);
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;
+  padding:7px 14px;cursor:pointer;transition:all 0.15s;border-radius:2px;
+}
+nav button:hover{color:var(--paper);background:rgba(255,255,255,0.07);}
+nav button.active{color:var(--paper);background:rgba(255,255,255,0.12);}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;}
+
+/* ============ WELCOME PAGE ============ */
+.welcome{
+  max-width:1100px;margin:0 auto;padding:56px 40px 80px;
+}
+.welcome-header{
+  border-bottom:2px solid var(--ink);padding-bottom:32px;margin-bottom:40px;
+  display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end;
+}
+.welcome-eyebrow{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.2em;
+  color:var(--muted);margin-bottom:12px;
+}
+.welcome-h1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(36px,5vw,62px);line-height:1.05;
+  color:var(--ink);
+}
+.welcome-h1 em{font-style:italic;color:var(--red);}
+.welcome-sub{color:var(--muted);font-size:15px;max-width:520px;line-height:1.75;margin-top:14px;}
+.welcome-meta{text-align:right;}
+.ver-block{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+  border:1px solid var(--rule);padding:16px 20px;border-radius:2px;
+  line-height:2;
+}
+.ver-block strong{color:var(--ink);display:block;}
+
+/* AGENT SETUP CARD */
+.setup-card{
+  background:var(--ink);color:var(--paper);
+  border-radius:4px;padding:32px;margin-bottom:40px;
+}
+.setup-card-title{
+  font-family:'Playfair Display',serif;font-size:20px;margin-bottom:6px;
+}
+.setup-card-sub{color:rgba(245,243,238,0.55);font-size:13px;margin-bottom:24px;}
+.setup-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.setup-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dark-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:rgba(245,243,238,0.5);margin-bottom:6px;}
+.dark-input,.dark-select,.dark-textarea{
+  width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);
+  color:var(--paper);font-family:'IBM Plex Sans',sans-serif;font-size:13px;
+  padding:9px 12px;border-radius:2px;outline:none;transition:border-color 0.2s;
+}
+.dark-input::placeholder,.dark-textarea::placeholder{color:rgba(245,243,238,0.3);}
+.dark-input:focus,.dark-select:focus,.dark-textarea:focus{border-color:rgba(255,255,255,0.5);}
+.dark-select option{background:#1e1a14;}
+.dark-textarea{min-height:80px;resize:vertical;}
+
+/* INDUSTRY PICKER */
+.industry-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;}
+.industry-chip{
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+  border-radius:2px;padding:10px 12px;cursor:pointer;transition:all 0.15s;
+  text-align:center;font-size:12px;color:rgba(245,243,238,0.6);
+}
+.industry-chip:hover{background:rgba(255,255,255,0.12);color:var(--paper);}
+.industry-chip.selected{background:var(--paper);color:var(--ink);border-color:var(--paper);font-weight:500;}
+.industry-chip .ic-icon{font-size:18px;margin-bottom:4px;display:block;}
+
+/* FRAMEWORK CARDS */
+.framework-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px;}
+.f-card{
+  border-radius:3px;padding:22px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;
+  border:1px solid;
+}
+.f-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.08);}
+.f-card-gov{background:var(--gov-bg);border-color:var(--gov-border);}
+.f-card-map{background:var(--map-bg);border-color:var(--map-border);}
+.f-card-mea{background:var(--mea-bg);border-color:var(--mea-border);}
+.f-card-man{background:var(--man-bg);border-color:var(--man-border);}
+.f-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.15em;font-weight:500;margin-bottom:8px;}
+.f-name{font-family:'Playfair Display',serif;font-size:17px;margin-bottom:6px;}
+.f-desc{font-size:11px;line-height:1.6;opacity:0.7;margin-bottom:12px;}
+.f-pills{display:flex;flex-wrap:wrap;gap:4px;}
+.f-pill{font-size:10px;padding:2px 8px;border-radius:100px;opacity:0.8;}
+
+/* COMPLIANCE NOTICES */
+.notice-stack{display:flex;flex-direction:column;gap:10px;}
+.notice{
+  display:flex;gap:14px;padding:14px 18px;border-radius:3px;font-size:13px;
+  border-left:3px solid;
+}
+.notice-red{background:#fdf3f2;border-color:var(--red);}
+.notice-amber{background:#fdf8ed;border-color:var(--amber);}
+.notice-green{background:#f0f9f2;border-color:var(--green);}
+.notice-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.notice-body strong{display:block;font-weight:600;margin-bottom:2px;font-size:13px;}
+.notice-body p{color:var(--muted);font-size:12px;}
+
+/* ============ INNER PAGES LAYOUT ============ */
+.inner-layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 62px);}
+
+/* SIDEBAR */
+aside{
+  background:var(--paper2);border-right:1px solid var(--rule);
+  padding:24px 0;position:sticky;top:62px;height:calc(100vh - 62px);overflow-y:auto;
+}
+.sb-section{padding-bottom:16px;border-bottom:1px solid var(--rule);margin-bottom:8px;}
+.sb-section:last-child{border-bottom:none;}
+.sb-head{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.18em;
+  color:var(--muted);padding:0 20px 8px;display:flex;align-items:center;gap:8px;
+}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;
+  transition:background 0.12s;border-left:2px solid transparent;
+}
+.sb-item:hover{background:rgba(0,0,0,0.04);}
+.sb-item.active{background:rgba(0,0,0,0.05);border-left-color:var(--ink);}
+.sb-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.sb-label{font-size:12px;color:var(--muted);flex:1;line-height:1.3;}
+.sb-item.active .sb-label{color:var(--ink);}
+.sb-badge{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 7px;border-radius:100px;
+  flex-shrink:0;
+}
+.b-done{background:rgba(30,132,73,0.12);color:var(--green);}
+.b-part{background:rgba(214,137,16,0.12);color:var(--amber);}
+.b-todo{background:rgba(138,128,112,0.1);color:var(--muted);}
+
+/* MAIN */
+main{padding:36px 44px;overflow-y:auto;max-height:calc(100vh - 62px);}
+.page-head{
+  padding-bottom:24px;border-bottom:2px solid var(--ink);margin-bottom:28px;
+  display:flex;align-items:flex-start;justify-content:space-between;
+}
+.ph-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--muted);margin-bottom:8px;}
+.ph-title{font-family:'Playfair Display',serif;font-size:30px;line-height:1.1;margin-bottom:6px;}
+.ph-desc{color:var(--muted);font-size:13px;max-width:460px;}
+
+/* PROGRESS RING */
+.pring{width:70px;height:70px;position:relative;flex-shrink:0;}
+.pring svg{transform:rotate(-90deg);}
+.pring-bg{fill:none;stroke:var(--rule);stroke-width:4;}
+.pring-fill{fill:none;stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset 0.6s ease;}
+.pring-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.pring-pct{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;line-height:1;}
+.pring-sub{font-size:9px;color:var(--muted);letter-spacing:0.06em;margin-top:1px;}
+
+/* POLICY CARDS */
+.policy-stack{display:flex;flex-direction:column;gap:14px;}
+.pc{
+  background:#fff;border:1px solid var(--rule);border-radius:3px;overflow:hidden;
+  transition:border-color 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.04);
+}
+.pc:hover{border-color:#bbb;}
+.pc-head{
+  padding:16px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;user-select:none;
+}
+.pc-icon{
+  width:36px;height:36px;border-radius:3px;display:flex;align-items:center;justify-content:center;
+  font-size:17px;flex-shrink:0;
+}
+.pc-meta{flex:1;}
+.pc-code{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-bottom:2px;}
+.pc-title{font-size:14px;font-weight:600;color:var(--ink);}
+.pc-priority{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;padding:3px 10px;border-radius:100px;flex-shrink:0;
+}
+.pri-high{background:#fdf3f2;color:var(--red);border:1px solid #f5c6c2;}
+.pri-med{background:#fdf8ed;color:var(--amber);border:1px solid #f5e0a0;}
+.pri-low{background:#f0f9f2;color:var(--green);border:1px solid #a8dbb8;}
+.pc-chev{color:var(--muted);font-size:11px;transition:transform 0.2s;}
+.pc-chev.open{transform:rotate(90deg);}
+.pc-body{padding:0 20px;max-height:0;overflow:hidden;transition:max-height 0.35s ease,padding 0.3s;}
+.pc-body.open{max-height:1200px;padding:0 20px 22px;}
+.pc-inner{border-top:1px solid var(--rule);padding-top:18px;}
+
+/* FIELDS */
+.fg{margin-bottom:16px;}
+.fl{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;
+  color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:5px;
+}
+.req{color:var(--red);}
+.fi,.ft,.fs{
+  width:100%;background:var(--paper);border:1px solid var(--rule);border-radius:2px;
+  color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:13px;
+  padding:9px 12px;outline:none;transition:border-color 0.2s;resize:vertical;
+}
+.fi:focus,.ft:focus,.fs:focus{border-color:var(--ink);background:#fff;}
+.ft{min-height:90px;}
+.fs option{background:#fff;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* CHECKBOXES */
+.cg{display:flex;flex-direction:column;gap:7px;}
+.ci{
+  display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:9px 12px;
+  border:1px solid var(--rule);border-radius:2px;transition:all 0.12s;background:var(--paper);
+}
+.ci:hover{background:#fff;border-color:#bbb;}
+.ci input{margin-top:2px;accent-color:var(--ink);flex-shrink:0;cursor:pointer;}
+.ci-text{font-size:12px;color:var(--muted);line-height:1.45;}
+.ci input:checked~.ci-text{color:var(--ink);}
+
+/* NOTICE INLINE */
+.ni{
+  display:flex;gap:12px;padding:12px 14px;border-radius:2px;margin-top:12px;font-size:12px;
+  border-left:3px solid;
+}
+.ni-amber{background:#fdf8ed;border-color:var(--amber);}
+.ni-red{background:#fdf3f2;border-color:var(--red);}
+.ni-green{background:#f0f9f2;border-color:var(--green);}
+.ni strong{display:block;font-weight:600;margin-bottom:2px;color:var(--ink);}
+.ni p{color:var(--muted);}
+
+/* RISK MATRIX / SLIDERS */
+.slider-metric{
+  background:var(--paper);border:1px solid var(--rule);border-radius:2px;
+  padding:14px;margin-bottom:10px;
+}
+.sm-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.sm-title{font-size:13px;font-weight:600;}
+.sm-val{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--red);}
+.sm-desc{font-size:11px;color:var(--muted);margin-bottom:8px;}
+input[type=range]{width:100%;accent-color:var(--ink);}
+
+/* GENERATE PAGE */
+.gen-wrap{max-width:860px;margin:0 auto;padding:44px 40px 80px;}
+.gen-head{border-bottom:2px solid var(--ink);padding-bottom:24px;margin-bottom:32px;}
+.gen-title{font-family:'Playfair Display',serif;font-size:36px;margin-bottom:8px;}
+.gen-sub{color:var(--muted);font-size:14px;}
+
+.completion-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+.cg-card{
+  background:#fff;border:1px solid var(--rule);border-radius:3px;padding:16px;text-align:center;
+}
+.cg-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.15em;margin-bottom:10px;}
+.cg-ring{margin:0 auto 8px;}
+.cg-pct{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:500;}
+
+.options-card{background:#fff;border:1px solid var(--rule);border-radius:3px;padding:24px;margin-bottom:24px;}
+.oc-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--muted);margin-bottom:16px;}
+.options-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;}
+
+.gen-btn{
+  display:inline-flex;align-items:center;gap:12px;
+  background:var(--ink);color:var(--paper);border:none;border-radius:2px;
+  padding:14px 28px;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;
+}
+.gen-btn:hover{background:var(--deep);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.15);}
+.gen-btn:active{transform:none;}
+
+/* OUTPUT */
+#policy-output{
+  margin-top:28px;background:#fff;border:1px solid var(--rule);border-radius:3px;
+  overflow:hidden;display:none;
+}
+.out-head{
+  padding:12px 20px;border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--ink);
+}
+.out-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--paper);}
+.out-actions{display:flex;gap:8px;}
+.btn-sm{
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+  color:var(--paper);font-family:'IBM Plex Mono',monospace;font-size:9px;
+  letter-spacing:0.08em;padding:5px 12px;border-radius:2px;cursor:pointer;transition:all 0.15s;
+}
+.btn-sm:hover{background:rgba(255,255,255,0.2);}
+#policy-text{
+  padding:28px;font-size:13px;line-height:1.85;white-space:pre-wrap;
+  color:var(--ink);min-height:200px;font-family:'IBM Plex Sans',sans-serif;
+}
+.loading{color:var(--muted);font-style:italic;display:flex;align-items:center;gap:8px;}
+.dots span{animation:blink 1.4s infinite both;}
+.dots span:nth-child(2){animation-delay:.2s;}
+.dots span:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:0}40%{opacity:1}}
+
+/* SCORE BARS */
+.sb-score{margin-bottom:12px;}
+.sbs-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.sbs-pct{font-family:'IBM Plex Mono',monospace;font-size:11px;}
+.sbs-bar{height:5px;background:var(--rule);border-radius:2px;overflow:hidden;}
+.sbs-fill{height:100%;border-radius:2px;transition:width 0.8s ease;}
+
+/* TABS */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--rule);margin-bottom:20px;}
+.tab{
+  padding:9px 18px;border:none;background:none;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;
+  color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:all 0.15s;
+}
+.tab:hover{color:var(--ink);}
+.tab.active{color:var(--ink);border-bottom-color:var(--ink);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--rule);border-radius:2px;}
+
+@media(max-width:900px){
+  .inner-layout{grid-template-columns:1fr;}
+  aside{position:static;height:auto;}
+  .setup-grid,.options-grid,.completion-grid,.framework-row{grid-template-columns:1fr 1fr;}
+  .industry-grid{grid-template-columns:repeat(3,1fr);}
+  .fr{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="top-rule"></div>
+
+<header>
+  <div class="logo-wrap">
+    <span class="logo-badge">NIST AI RMF 1.0</span>
+    <span class="logo-title">GenAI Policy Builder</span>
+  </div>
+  <nav>
+    <button class="active" onclick="showPage('welcome',this)">Overview</button>
+    <button onclick="showPage('govern',this)">Govern</button>
+    <button onclick="showPage('map',this)">Map</button>
+    <button onclick="showPage('measure',this)">Measure</button>
+    <button onclick="showPage('manage',this)">Manage</button>
+    <button onclick="showPage('generate',this)">Generate Policy</button>
+  </nav>
+</header>
+
+<!-- ========== WELCOME PAGE ========== -->
+<div id="page-welcome" class="page active">
+<div class="welcome">
+
+  <div class="welcome-header">
+    <div>
+      <div class="welcome-eyebrow">ENTERPRISE AI GOVERNANCE TOOLKIT</div>
+      <h1 class="welcome-h1">Build compliant<br>policy for <em>any</em><br>GenAI agent.</h1>
+      <p class="welcome-sub">A structured evaluation and policy-generation tool aligned to the NIST AI Risk Management Framework. Define your agent, assess risks across all four RMF functions, and produce a professional compliance document.</p>
+    </div>
+    <div class="welcome-meta">
+      <div class="ver-block">
+        <strong>NIST AI RMF 1.0</strong>
+        GOVERN · MAP · MEASURE · MANAGE<br>
+        <strong>Regulation Awareness</strong>
+        EU AI Act · ISO 42001 · SOC 2<br>
+        HIPAA · GDPR · CCPA · FTC AI<br>
+        <strong>Output Format</strong>
+        AI-generated policy document
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT SETUP -->
+  <div class="setup-card">
+    <div class="setup-card-title">Step 1 — Define Your AI Agent</div>
+    <div class="setup-card-sub">This information will be used throughout the framework and in your generated policy document.</div>
+
+    <div class="setup-grid">
+      <div>
+        <div class="dark-label">AGENT / PRODUCT NAME <span style="color:#e88">*</span></div>
+        <input class="dark-input" id="agent-name" placeholder="e.g., SalesBot AI, ContractGPT, HelpDesk Agent">
+      </div>
+      <div>
+        <div class="dark-label">ORGANIZATION NAME</div>
+        <input class="dark-input" id="agent-org" placeholder="Your company or department name">
+      </div>
+      <div>
+        <div class="dark-label">UNDERLYING MODEL / PROVIDER</div>
+        <input class="dark-input" id="agent-model" placeholder="e.g., Claude (Anthropic), GPT-4 (OpenAI), Gemini">
+      </div>
+    </div>
+
+    <div class="setup-grid-2">
+      <div>
+        <div class="dark-label">AGENT FUNCTION — WHAT DOES IT DO?</div>
+        <textarea class="dark-textarea" id="agent-purpose" placeholder="Describe what this AI agent does in plain language. E.g., 'Automates customer support ticket responses and routes complex cases to human agents. Answers product questions using company knowledge base...'"></textarea>
+      </div>
+      <div>
+        <div class="dark-label">OUT-OF-SCOPE / PROHIBITED USES</div>
+        <textarea class="dark-textarea" id="agent-outscope" placeholder="What should this agent never do? E.g., 'Must not provide legal or financial advice, must not process PII outside approved flows, must not take actions that trigger financial transactions without approval...'"></textarea>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div class="dark-label">INDUSTRY / SECTOR — SELECT ALL THAT APPLY</div>
+      <div class="industry-grid">
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Financial Services"><span class="ic-icon">🏦</span>Financial Services</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Healthcare"><span class="ic-icon">🏥</span>Healthcare</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Legal"><span class="ic-icon">⚖️</span>Legal</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Retail & E-Commerce"><span class="ic-icon">🛒</span>Retail</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Education"><span class="ic-icon">🎓</span>Education</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="HR & Recruiting"><span class="ic-icon">👥</span>HR & Recruiting</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Marketing & Advertising"><span class="ic-icon">📣</span>Marketing</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Customer Service"><span class="ic-icon">💬</span>Customer Service</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Software & Technology"><span class="ic-icon">💻</span>Technology</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Government & Public Sector"><span class="ic-icon">🏛️</span>Government</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Manufacturing & Operations"><span class="ic-icon">🏭</span>Manufacturing</div>
+        <div class="industry-chip" onclick="toggleIndustry(this)" data-val="Media & Content"><span class="ic-icon">📰</span>Media & Content</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FRAMEWORK OVERVIEW -->
+  <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin-bottom:16px;">The Four RMF Functions</h2>
+  <div class="framework-row">
+    <div class="f-card f-card-gov" onclick="showPage('govern',document.querySelectorAll('nav button')[1])">
+      <div class="f-tag" style="color:var(--gov-c)">01 · GOVERN</div>
+      <div class="f-name" style="color:var(--gov-c)">Governance & Culture</div>
+      <div class="f-desc">Establish policies, accountability, roles, and an organizational culture that supports responsible AI deployment.</div>
+      <div class="f-pills">
+        <span class="f-pill" style="background:var(--gov-border);color:var(--gov-c)">Accountability</span>
+        <span class="f-pill" style="background:var(--gov-border);color:var(--gov-c)">Policies</span>
+        <span class="f-pill" style="background:var(--gov-border);color:var(--gov-c)">Risk Culture</span>
+      </div>
+    </div>
+    <div class="f-card f-card-map" onclick="showPage('map',document.querySelectorAll('nav button')[2])">
+      <div class="f-tag" style="color:var(--map-c)">02 · MAP</div>
+      <div class="f-name" style="color:var(--map-c)">Risk Identification</div>
+      <div class="f-desc">Identify and categorize AI risks in context — use cases, affected stakeholders, potential harms and benefits.</div>
+      <div class="f-pills">
+        <span class="f-pill" style="background:var(--map-border);color:var(--map-c)">Use Cases</span>
+        <span class="f-pill" style="background:var(--map-border);color:var(--map-c)">Stakeholders</span>
+        <span class="f-pill" style="background:var(--map-border);color:var(--map-c)">Risk Taxonomy</span>
+      </div>
+    </div>
+    <div class="f-card f-card-mea" onclick="showPage('measure',document.querySelectorAll('nav button')[3])">
+      <div class="f-tag" style="color:var(--mea-c)">03 · MEASURE</div>
+      <div class="f-name" style="color:var(--mea-c)">Risk Analysis</div>
+      <div class="f-desc">Analyze risks quantitatively and qualitatively — define metrics, testing protocols, and monitoring benchmarks.</div>
+      <div class="f-pills">
+        <span class="f-pill" style="background:var(--mea-border);color:var(--mea-c)">Metrics</span>
+        <span class="f-pill" style="background:var(--mea-border);color:var(--mea-c)">Testing</span>
+        <span class="f-pill" style="background:var(--mea-border);color:var(--mea-c)">Monitoring</span>
+      </div>
+    </div>
+    <div class="f-card f-card-man" onclick="showPage('manage',document.querySelectorAll('nav button')[4])">
+      <div class="f-tag" style="color:var(--man-c)">04 · MANAGE</div>
+      <div class="f-name" style="color:var(--man-c)">Risk Treatment</div>
+      <div class="f-desc">Implement controls, mitigations, and incident response procedures to treat and accept residual risks.</div>
+      <div class="f-pills">
+        <span class="f-pill" style="background:var(--man-border);color:var(--man-c)">Controls</span>
+        <span class="f-pill" style="background:var(--man-border);color:var(--man-c)">Mitigations</span>
+        <span class="f-pill" style="background:var(--man-border);color:var(--man-c)">Response</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLIANCE NOTICES -->
+  <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin-bottom:16px;">Key Compliance Landscape</h2>
+  <div class="notice-stack">
+    <div class="notice notice-red">
+      <div class="notice-icon">⚡</div>
+      <div class="notice-body">
+        <strong>EU AI Act (2024) — Mandatory Risk Classification</strong>
+        <p>The EU AI Act introduces four risk tiers: Unacceptable, High, Limited, and Minimal. Many enterprise GenAI uses in hiring, credit, critical infrastructure, and law enforcement are classified HIGH RISK, requiring mandatory conformity assessments, human oversight, and documentation obligations before market placement.</p>
+      </div>
+    </div>
+    <div class="notice notice-amber">
+      <div class="notice-icon">🔒</div>
+      <div class="notice-body">
+        <strong>Data Privacy — GDPR · CCPA · HIPAA</strong>
+        <p>GenAI agents processing personal data of EU residents (GDPR), California residents (CCPA), or health-related information (HIPAA) face significant obligations including data minimization, purpose limitation, the right to explanation for automated decisions, and potentially a DPIA (Data Protection Impact Assessment).</p>
+      </div>
+    </div>
+    <div class="notice notice-amber">
+      <div class="notice-icon">⚖️</div>
+      <div class="notice-body">
+        <strong>Anti-Discrimination & Employment Law</strong>
+        <p>AI agents used in hiring, performance management, lending, or housing decisions are subject to anti-discrimination laws (EEOC Title VII, ECOA, FHA). The EEOC has issued guidance on AI and automated systems in employment. Bias testing and adverse impact analysis are legally prudent and increasingly required.</p>
+      </div>
+    </div>
+    <div class="notice notice-green">
+      <div class="notice-icon">✓</div>
+      <div class="notice-body">
+        <strong>NIST AI RMF — Voluntary but Widely Adopted</strong>
+        <p>The NIST AI RMF (Jan 2023) is voluntary but referenced by federal agencies, regulators, and enterprise procurement requirements. Aligning to it demonstrates due diligence, reduces liability exposure, and is rapidly becoming a de facto standard for enterprise AI governance.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ========== GOVERN PAGE ========== -->
+<div id="page-govern" class="page">
+<div class="inner-layout">
+  <aside>
+    <div class="sb-section">
+      <div class="sb-head">GOVERN</div>
+      <div class="sb-item active" onclick="openCard('gv1')"><div class="sb-dot" style="background:var(--gov-c)"></div><div class="sb-label">GV-1 · Policies & Scope</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('gv2')"><div class="sb-dot" style="background:var(--gov-c)"></div><div class="sb-label">GV-2 · Accountability & Roles</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('gv3')"><div class="sb-dot" style="background:var(--gov-c)"></div><div class="sb-label">GV-3 · Risk Tolerance & Culture</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('gv4')"><div class="sb-dot" style="background:var(--gov-c)"></div><div class="sb-label">GV-4 · Workforce Competency</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('gv5')"><div class="sb-dot" style="background:var(--gov-c)"></div><div class="sb-label">GV-5 · Policy Lifecycle</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('gv6')"><div class="sb-dot" style="background:var(--gov-c)"></div><div class="sb-label">GV-6 · Third-Party Oversight</div><span class="sb-badge b-todo">TODO</span></div>
+    </div>
+  </aside>
+  <main>
+    <div class="page-head">
+      <div>
+        <div class="ph-eyebrow" style="color:var(--gov-c)">FUNCTION 01 · GOVERN</div>
+        <div class="ph-title">Governance & Culture</div>
+        <div class="ph-desc">Establish the organizational structures, policies, and culture needed to manage AI risk responsibly at every stage of your agent's lifecycle.</div>
+      </div>
+      <div class="pring">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle class="pring-bg" cx="35" cy="35" r="29"/>
+          <circle class="pring-fill" cx="35" cy="35" r="29" stroke="var(--gov-c)" stroke-dasharray="182.2" stroke-dashoffset="182.2" id="ring-govern"/>
+        </svg>
+        <div class="pring-inner">
+          <div class="pring-pct" id="pct-govern" style="color:var(--gov-c)">0%</div>
+          <div class="pring-sub">GOVERN</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="policy-stack">
+
+      <div class="pc" id="gv1">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--gov-bg)">📋</div>
+          <div class="pc-meta">
+            <div class="pc-code">GV-1 · NIST AI RMF GOVERN 1.1–1.7</div>
+            <div class="pc-title">AI Use Policy, Scope & Authorization</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fr">
+              <div class="fg"><div class="fl">POLICY OWNER / SPONSOR <span class="req">*</span></div><input class="fi" id="gv1-owner" placeholder="Name and title of accountable executive" oninput="updateProgress()"></div>
+              <div class="fg"><div class="fl">POLICY EFFECTIVE DATE</div><input class="fi" type="date" id="gv1-date" oninput="updateProgress()"></div>
+            </div>
+            <div class="fg"><div class="fl">AUTHORIZED USE STATEMENT <span class="req">*</span></div><textarea class="ft" id="gv1-auth" placeholder="Define the authorized uses of this GenAI agent within your organization. Be specific about what processes, users, and data it is permitted to access and act upon." oninput="updateProgress()"></textarea></div>
+            <div class="fg"><div class="fl">PROHIBITED USES & HARD LIMITS</div><textarea class="ft" id="gv1-prohibit" placeholder="List specific actions this agent must never perform. E.g., 'May not make final hiring decisions without human review. May not process financial transactions above $X. May not access systems outside the approved integration list.'" style="min-height:70px;" oninput="updateProgress()"></textarea></div>
+            <div class="fg"><div class="fl">APPLICABLE REGULATIONS & STANDARDS</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">EU AI Act — risk classification and conformity obligations</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">GDPR — personal data processing of EU data subjects</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">CCPA / CPRA — California consumer privacy rights</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">HIPAA — health information privacy and security</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">EEOC / Employment anti-discrimination law (AI in hiring)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">ECOA / FHA — fair lending and housing (credit/financial AI)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">SOC 2 Type II — security and availability controls</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">ISO 42001 — AI Management System standard</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">FINRA / SEC — financial services AI guidance</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">FTC AI and automated decision guidance</span></label>
+              </div>
+            </div>
+            <div class="fr">
+              <div class="fg"><div class="fl">EU AI ACT RISK TIER</div>
+                <select class="fs" id="gv1-eu-tier" onchange="updateProgress()">
+                  <option value="">Select tier...</option>
+                  <option>Unacceptable Risk — Prohibited use case</option>
+                  <option>High Risk — Mandatory conformity assessment required</option>
+                  <option>Limited Risk — Transparency obligations apply</option>
+                  <option>Minimal Risk — No specific EU AI Act obligations</option>
+                  <option>General Purpose AI (GPAI) — Additional rules apply</option>
+                </select>
+              </div>
+              <div class="fg"><div class="fl">POLICY REVIEW CADENCE</div>
+                <select class="fs" id="gv1-review" onchange="updateProgress()">
+                  <option value="">Select frequency...</option>
+                  <option>Monthly (high-risk or rapidly evolving)</option>
+                  <option>Quarterly</option>
+                  <option>Semi-annually</option>
+                  <option>Annually</option>
+                  <option>Upon major model or product changes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="gv2">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--gov-bg)">👤</div>
+          <div class="pc-meta">
+            <div class="pc-code">GV-2 · NIST AI RMF GOVERN 2.1–2.2</div>
+            <div class="pc-title">Accountability, Roles & Escalation</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+              <div class="fg"><div class="fl">AI SYSTEM OWNER</div><input class="fi" id="gv2-owner" placeholder="Name / Role" oninput="updateProgress()"></div>
+              <div class="fg"><div class="fl">AI ETHICS / SAFETY LEAD</div><input class="fi" id="gv2-safety" placeholder="Name / Role" oninput="updateProgress()"></div>
+              <div class="fg"><div class="fl">DATA PRIVACY OFFICER (DPO)</div><input class="fi" id="gv2-dpo" placeholder="Name / Role" oninput="updateProgress()"></div>
+              <div class="fg"><div class="fl">LEGAL / COMPLIANCE CONTACT</div><input class="fi" id="gv2-legal" placeholder="Name / Role" oninput="updateProgress()"></div>
+              <div class="fg"><div class="fl">TECHNICAL AI LEAD</div><input class="fi" id="gv2-tech" placeholder="Name / Role" oninput="updateProgress()"></div>
+              <div class="fg"><div class="fl">BUSINESS PROCESS OWNER</div><input class="fi" id="gv2-biz" placeholder="Name / Role" oninput="updateProgress()"></div>
+            </div>
+            <div class="fg"><div class="fl">HUMAN OVERSIGHT MODEL</div>
+              <select class="fs" id="gv2-oversight" onchange="updateProgress()">
+                <option value="">Select oversight approach...</option>
+                <option>Human-in-the-loop — Human approves every AI output before action</option>
+                <option>Human-on-the-loop — AI acts autonomously; human monitors and can override</option>
+                <option>Human-in-command — AI operates autonomously; human can shut down at any time</option>
+                <option>Fully automated — No real-time human involvement (low-risk only)</option>
+              </select>
+            </div>
+            <div class="fg"><div class="fl">ESCALATION PATH FOR AI INCIDENTS</div><textarea class="ft" id="gv2-escalation" placeholder="Describe the escalation chain. E.g., 'End user reports issue → Customer Success Team → AI Safety Lead (within 4hrs) → Legal/Compliance (if data or regulatory concern) → Executive sponsor (if Critical)'" style="min-height:70px;" oninput="updateProgress()"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="gv3">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--gov-bg)">🌱</div>
+          <div class="pc-meta">
+            <div class="pc-code">GV-3 · NIST AI RMF GOVERN 3.1–3.2</div>
+            <div class="pc-title">Risk Tolerance & Organizational Culture</div>
+          </div>
+          <span class="pc-priority pri-med">IMPORTANT</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">ORGANIZATIONAL RISK TOLERANCE</div>
+              <select class="fs" id="gv3-tol" onchange="updateProgress()">
+                <option value="">Select risk tolerance level...</option>
+                <option>Risk Averse — Extensive controls, prefer human oversight; minimise AI autonomy</option>
+                <option>Cautious — Low tolerance; strong safeguards required before deployment</option>
+                <option>Moderate — Balanced approach; accept risk where mitigations are in place</option>
+                <option>Open — Willing to accept higher risk in exchange for innovation/efficiency gains</option>
+              </select>
+            </div>
+            <div class="fg"><div class="fl">AI ETHICS PRINCIPLES ADOPTED</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Fairness — AI outputs shall not discriminate or perpetuate bias</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Transparency — Users are informed when interacting with AI; decisions are explainable</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Accountability — Named individuals are responsible for AI outcomes</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Privacy — Minimum data necessary; user rights respected</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Safety & Reliability — Agent behaves as intended; failures are contained</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Human agency — Humans can always override, correct, or opt out</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Sustainability — Environmental impact of AI compute is considered</span></label>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">INTERNAL CONCERN REPORTING CHANNEL</div><input class="fi" id="gv3-channel" placeholder="How can staff raise AI safety or ethics concerns? e.g., ethics@company.com, Slack #ai-safety" oninput="updateProgress()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="gv4">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--gov-bg)">🎓</div>
+          <div class="pc-meta">
+            <div class="pc-code">GV-4 · NIST AI RMF GOVERN 4.1–4.2</div>
+            <div class="pc-title">Workforce Competency & AI Literacy</div>
+          </div>
+          <span class="pc-priority pri-med">IMPORTANT</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">REQUIRED TRAINING FOR ALL STAFF USING AI</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">AI fundamentals: capabilities, limitations, and hallucination risks</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Responsible AI use: ethics, bias awareness, and fairness principles</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Data privacy and information security when using AI tools</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Incident recognition and reporting procedures</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Prompt injection and adversarial attack awareness</span></label>
+              </div>
+            </div>
+            <div class="fr">
+              <div class="fg"><div class="fl">TRAINING FREQUENCY</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option value="">Select...</option>
+                  <option>Onboarding + annual refresh</option>
+                  <option>Quarterly micro-learnings</option>
+                  <option>As model or policy changes</option>
+                  <option>Continuous (embedded in workflow)</option>
+                </select>
+              </div>
+              <div class="fg"><div class="fl">AI EXPERTISE AVAILABLE IN-HOUSE</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option value="">Select level...</option>
+                  <option>Dedicated AI safety / ethics team</option>
+                  <option>AI lead embedded in product/engineering</option>
+                  <option>External consultants for AI governance</option>
+                  <option>Limited — developing capability</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="gv5">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--gov-bg)">🔄</div>
+          <div class="pc-meta">
+            <div class="pc-code">GV-5 · NIST AI RMF GOVERN 5.1–5.2</div>
+            <div class="pc-title">Policy Lifecycle & Change Management</div>
+          </div>
+          <span class="pc-priority pri-low">STANDARD</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">TRIGGERS REQUIRING POLICY REVIEW</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Major model version upgrade or change of AI provider</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">New use case, feature, or user population added</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">New regulation or regulatory guidance published</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Significant AI safety incident or near-miss</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Material change in data sources or integrations</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Scheduled periodic review (per cadence in GV-1)</span></label>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">VERSION CONTROL & DOCUMENTATION</div>
+              <select class="fs" onchange="updateProgress()">
+                <option value="">How are policy versions tracked?</option>
+                <option>Formal version-controlled document repository (e.g., SharePoint, Confluence)</option>
+                <option>GRC / compliance management platform</option>
+                <option>Internal wiki with change log</option>
+                <option>Manual document management with audit trail</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="gv6">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--gov-bg)">🤝</div>
+          <div class="pc-meta">
+            <div class="pc-code">GV-6 · NIST AI RMF GOVERN 6.1–6.2</div>
+            <div class="pc-title">Third-Party & AI Supply Chain Governance</div>
+          </div>
+          <span class="pc-priority pri-med">IMPORTANT</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">AI VENDORS & THIRD-PARTY COMPONENTS</div><textarea class="ft" id="gv6-vendors" placeholder="List all AI providers, APIs, data sources, and third-party tools used. E.g., 'LLM: Anthropic Claude via API. Vector DB: Pinecone. Knowledge base: internal SharePoint. CRM integration: Salesforce.'" style="min-height:70px;" oninput="updateProgress()"></textarea></div>
+            <div class="fg"><div class="fl">VENDOR DUE DILIGENCE REQUIREMENTS</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">AI providers must have a published responsible AI / acceptable use policy</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Data processors must execute a Data Processing Agreement (DPA)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Cloud providers must maintain SOC 2 Type II or equivalent certification</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Annual vendor security assessment or review</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Vendor must notify us of material model changes or safety incidents</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Right-to-audit clause in vendor contracts</span></label>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">DATA RESIDENCY & SOVEREIGNTY REQUIREMENTS</div><input class="fi" id="gv6-residency" placeholder="Specify where data must reside. E.g., 'All PII must remain within EU. No training on customer data without explicit consent.'" oninput="updateProgress()"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- ========== MAP PAGE ========== -->
+<div id="page-map" class="page">
+<div class="inner-layout">
+  <aside>
+    <div class="sb-section">
+      <div class="sb-head">MAP</div>
+      <div class="sb-item active" onclick="openCard('mp1')"><div class="sb-dot" style="background:var(--map-c)"></div><div class="sb-label">MP-1 · Context & Use Cases</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('mp2')"><div class="sb-dot" style="background:var(--map-c)"></div><div class="sb-label">MP-2 · Stakeholders & Affected Parties</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('mp3')"><div class="sb-dot" style="background:var(--map-c)"></div><div class="sb-label">MP-3 · AI Risk Categories</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('mp4')"><div class="sb-dot" style="background:var(--map-c)"></div><div class="sb-label">MP-4 · Benefits & Harms</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('mp5')"><div class="sb-dot" style="background:var(--map-c)"></div><div class="sb-label">MP-5 · Trustworthiness Profile</div><span class="sb-badge b-todo">TODO</span></div>
+    </div>
+  </aside>
+  <main>
+    <div class="page-head">
+      <div>
+        <div class="ph-eyebrow" style="color:var(--map-c)">FUNCTION 02 · MAP</div>
+        <div class="ph-title">Risk Identification</div>
+        <div class="ph-desc">Identify and categorize AI risks in the context of your agent's specific use cases, affected populations, and organizational setting.</div>
+      </div>
+      <div class="pring">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle class="pring-bg" cx="35" cy="35" r="29"/>
+          <circle class="pring-fill" cx="35" cy="35" r="29" stroke="var(--map-c)" stroke-dasharray="182.2" stroke-dashoffset="182.2" id="ring-map"/>
+        </svg>
+        <div class="pring-inner">
+          <div class="pring-pct" id="pct-map" style="color:var(--map-c)">0%</div>
+          <div class="pring-sub">MAP</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="policy-stack">
+
+      <div class="pc" id="mp1">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--map-bg)">🎯</div>
+          <div class="pc-meta">
+            <div class="pc-code">MP-1 · NIST AI RMF MAP 1.1–1.6</div>
+            <div class="pc-title">Context Establishment & Use Case Definition</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">PRIMARY USE CASES (HIGH-LEVEL)</div><textarea class="ft" id="mp1-usecases" placeholder="Describe each distinct use case this agent supports. E.g., '1. Answer FAQs from customers 24/7. 2. Summarize inbound support tickets and recommend routing. 3. Draft first-response emails for agent review.'" oninput="updateProgress()"></textarea></div>
+            <div class="fr">
+              <div class="fg"><div class="fl">DEPLOYMENT ENVIRONMENT</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option value="">Select...</option>
+                  <option>Public-facing product / consumer app (B2C)</option>
+                  <option>Internal tool (employees only)</option>
+                  <option>Business client platform (B2B SaaS)</option>
+                  <option>API / developer platform</option>
+                  <option>Embedded in partner product</option>
+                  <option>Physical environment (IoT, robotics)</option>
+                </select>
+              </div>
+              <div class="fg"><div class="fl">AGENT AUTONOMY LEVEL</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option value="">Select...</option>
+                  <option>Advisory only — outputs are information, not actions</option>
+                  <option>Semi-autonomous — can take limited pre-approved actions</option>
+                  <option>Autonomous with guardrails — acts within defined boundaries</option>
+                  <option>Fully agentic — plans and executes multi-step tasks independently</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">DATA THE AGENT ACCESSES OR PROCESSES</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Personal Identifiable Information (PII) — names, emails, IDs</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Sensitive personal data — health, financial, biometric, political, religious</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Proprietary business data — internal documents, trade secrets</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Regulated data — PHI (HIPAA), GLBA financial data, PCI cardholder data</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Public or open-source data only</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Real-time data streams (IoT, market feeds, live databases)</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="mp2">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--map-bg)">👥</div>
+          <div class="pc-meta">
+            <div class="pc-code">MP-2 · NIST AI RMF MAP 2.1–2.3</div>
+            <div class="pc-title">Stakeholders, Users & Affected Parties</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">WHO DIRECTLY USES THIS AGENT?</div><textarea class="ft" id="mp2-users" placeholder="Describe your primary users. E.g., 'Internal: customer service reps, 200 agents. External: end customers via web chat. Power users: team leads who configure the agent behavior.'" oninput="updateProgress()"></textarea></div>
+            <div class="fg"><div class="fl">VULNERABLE OR AT-RISK GROUPS POTENTIALLY AFFECTED</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Minors (under 18) — consent and content restrictions apply</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">People with disabilities — accessibility and communication requirements</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Non-native language speakers — translation accuracy and cultural nuance risks</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Economically disadvantaged groups — risk of disparate AI impact</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">People in vulnerable mental states — customer service or crisis contexts</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Job applicants / employees — decision-making AI with employment consequences</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">None identified — low-risk internal / technical use only</span></label>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">USER TRANSPARENCY & CONSENT MECHANISMS</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Users are clearly notified they are interacting with an AI system</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">AI disclosure is provided before data collection begins</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Users have the right to request a human instead of AI</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Users can request deletion of their data / interaction history</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Users can appeal or challenge AI-generated decisions that affect them</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="mp3">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--map-bg)">⚡</div>
+          <div class="pc-meta">
+            <div class="pc-code">MP-3 · NIST AI RMF MAP 3.1–3.5</div>
+            <div class="pc-title">AI Risk Category Assessment</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Identify all risk categories relevant to your GenAI agent. These will inform your MEASURE and MANAGE responses.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em;">Safety & Reliability</div>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Factual hallucination / false information output</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Unintended autonomous actions (agentic overreach)</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">System prompt extraction / prompt injection attacks</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Model degradation or performance drift over time</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Single point of failure / no fallback if AI is unavailable</span></label>
+              </div>
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em;">Fairness & Bias</div>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Discriminatory outputs affecting protected classes</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Training data bias perpetuated in outputs</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Unequal performance across demographic groups</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Cultural or linguistic bias in content generation</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Disparate impact in automated decision-making</span></label>
+              </div>
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:11px;font-weight:600;color:var(--gov-c);margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em;">Privacy & Security</div>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">PII or sensitive data leakage in model outputs</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Unauthorized data memorization / training on user data</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Third-party data exfiltration via tool use</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Excessive data collection beyond stated purpose</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">User re-identification from anonymized prompts</span></label>
+              </div>
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:11px;font-weight:600;color:var(--man-c);margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em;">Legal & Compliance</div>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Copyright infringement in generated content</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Unauthorized legal, financial, or medical advice</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Defamation or false claims about real people / companies</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Consumer protection violations (deceptive AI practices)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Non-compliance with sector-specific AI regulations</span></label>
+              </div>
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:11px;font-weight:600;color:var(--map-c);margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em;">Operational & Business</div>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Over-reliance reducing human skill and judgment</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Reputational damage from visible AI errors</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Vendor lock-in with AI provider</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Cost unpredictability from AI usage at scale</span></label>
+              </div>
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:11px;font-weight:600;color:var(--mea-c);margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em;">Explainability & Transparency</div>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Inability to explain or audit AI decisions</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Lack of audit logs for AI actions</span></label>
+                <label class="ci" style="margin-bottom:6px;"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Users unaware they are interacting with AI (deceptive)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text" style="font-size:12px;">Opaque model updates changing behavior without notice</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="mp4">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--map-bg)">⚖️</div>
+          <div class="pc-meta">
+            <div class="pc-code">MP-4 · NIST AI RMF MAP 4.1–4.2</div>
+            <div class="pc-title">Benefits, Harms & Net Impact Assessment</div>
+          </div>
+          <span class="pc-priority pri-med">IMPORTANT</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fr">
+              <div class="fg"><div class="fl">INTENDED BENEFITS</div><textarea class="ft" placeholder="Describe measurable business and user benefits. E.g., 30% reduction in ticket resolution time, 24/7 availability, consistent compliance language in all contracts, employee time savings..." oninput="updateProgress()"></textarea></div>
+              <div class="fg"><div class="fl">POTENTIAL NEGATIVE IMPACTS</div><textarea class="ft" placeholder="Describe harms to users, third parties, or society. Be honest and specific. E.g., Possible displacement of junior staff, risk of misleading advice if hallucination occurs, privacy exposure if data handling fails..." oninput="updateProgress()"></textarea></div>
+            </div>
+            <div class="fg"><div class="fl">OVERALL NET BENEFIT ASSESSMENT</div>
+              <select class="fs" onchange="updateProgress()">
+                <option value="">Select your assessment...</option>
+                <option>Strong net benefit — clearly beneficial with appropriate controls</option>
+                <option>Moderate net benefit — benefits outweigh risks; ongoing vigilance needed</option>
+                <option>Uncertain — more evaluation required before deployment decision</option>
+                <option>High risk — significant re-design or controls needed before approval</option>
+                <option>Not recommended — risks outweigh benefits; do not deploy</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="mp5">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--map-bg)">🔬</div>
+          <div class="pc-meta">
+            <div class="pc-code">MP-5 · NIST AI RMF MAP 5.1–5.2</div>
+            <div class="pc-title">NIST Trustworthiness Profile</div>
+          </div>
+          <span class="pc-priority pri-med">IMPORTANT</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">NIST defines 9 dimensions of AI trustworthiness. Select the top priorities for your agent:</p>
+            <div class="cg">
+              <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text"><strong>Accuracy</strong> — Outputs are factually correct and technically sound</span></label>
+              <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text"><strong>Reliability & Robustness</strong> — Consistent, predictable behavior even under adversarial conditions</span></label>
+              <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text"><strong>Safety</strong> — AI will not cause harm; appropriate fail-safes are in place</span></label>
+              <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text"><strong>Fairness & Bias Management</strong> — Equitable outcomes across all population groups</span></label>
+              <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text"><strong>Privacy</strong> — Personal data is protected; user rights are respected</span></label>
+              <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text"><strong>Explainability & Interpretability</strong> — Users and operators can understand AI reasoning</span></label>
+              <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text"><strong>Accountability</strong> — Named human responsibility for AI outcomes; audit trail exists</span></label>
+              <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text"><strong>Transparency</strong> — AI nature, capabilities, and limitations are disclosed</span></label>
+              <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text"><strong>Security & Resilience</strong> — Protected against adversarial attacks and misuse</span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- ========== MEASURE PAGE ========== -->
+<div id="page-measure" class="page">
+<div class="inner-layout">
+  <aside>
+    <div class="sb-section">
+      <div class="sb-head">MEASURE</div>
+      <div class="sb-item active" onclick="openCard('ms1')"><div class="sb-dot" style="background:var(--mea-c)"></div><div class="sb-label">MS-1 · Risk Metrics & KPIs</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('ms2')"><div class="sb-dot" style="background:var(--mea-c)"></div><div class="sb-label">MS-2 · Testing & Evaluation Plan</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('ms3')"><div class="sb-dot" style="background:var(--mea-c)"></div><div class="sb-label">MS-3 · Bias & Fairness Testing</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('ms4')"><div class="sb-dot" style="background:var(--mea-c)"></div><div class="sb-label">MS-4 · Production Monitoring</div><span class="sb-badge b-todo">TODO</span></div>
+    </div>
+  </aside>
+  <main>
+    <div class="page-head">
+      <div>
+        <div class="ph-eyebrow" style="color:var(--mea-c)">FUNCTION 03 · MEASURE</div>
+        <div class="ph-title">Risk Analysis & Metrics</div>
+        <div class="ph-desc">Quantify and analyze identified risks through metrics, testing frameworks, and ongoing monitoring for your GenAI agent.</div>
+      </div>
+      <div class="pring">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle class="pring-bg" cx="35" cy="35" r="29"/>
+          <circle class="pring-fill" cx="35" cy="35" r="29" stroke="var(--mea-c)" stroke-dasharray="182.2" stroke-dashoffset="182.2" id="ring-measure"/>
+        </svg>
+        <div class="pring-inner">
+          <div class="pring-pct" id="pct-measure" style="color:var(--mea-c)">0%</div>
+          <div class="pring-sub">MEASURE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="policy-stack">
+      <div class="pc" id="ms1">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--mea-bg)">📊</div>
+          <div class="pc-meta">
+            <div class="pc-code">MS-1 · NIST AI RMF MEASURE 1.1–1.3</div>
+            <div class="pc-title">Risk Metrics, KPIs & Thresholds</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Set measurable thresholds for acceptable AI performance. These are used to determine when intervention is required.</p>
+            <div class="slider-metric">
+              <div class="sm-row"><div class="sm-title">Output Accuracy / Factual Correctness</div><span class="sm-val" id="v-accuracy">95%</span></div>
+              <div class="sm-desc">Minimum % of outputs verified correct against ground truth or human review</div>
+              <input type="range" min="50" max="100" value="95" oninput="document.getElementById('v-accuracy').textContent=this.value+'%'">
+            </div>
+            <div class="slider-metric">
+              <div class="sm-row"><div class="sm-title">Policy Compliance Rate</div><span class="sm-val" id="v-policy">99%</span></div>
+              <div class="sm-desc">% of outputs that comply with all defined prohibited content and use policies</div>
+              <input type="range" min="80" max="100" value="99" oninput="document.getElementById('v-policy').textContent=this.value+'%'">
+            </div>
+            <div class="slider-metric">
+              <div class="sm-row"><div class="sm-title">Maximum Harmful Output Rate</div><span class="sm-val" id="v-harmful">0.1%</span></div>
+              <div class="sm-desc">Maximum acceptable % of outputs flagged as harmful or non-compliant by reviewers</div>
+              <input type="range" min="0" max="5" value="0.5" step="0.1" oninput="document.getElementById('v-harmful').textContent=this.value+'%'">
+            </div>
+            <div class="slider-metric">
+              <div class="sm-row"><div class="sm-title">Task Completion / Helpfulness Rate</div><span class="sm-val" id="v-task">90%</span></div>
+              <div class="sm-desc">% of user requests that are satisfactorily addressed without human escalation</div>
+              <input type="range" min="50" max="100" value="90" oninput="document.getElementById('v-task').textContent=this.value+'%'">
+            </div>
+            <div class="slider-metric">
+              <div class="sm-row"><div class="sm-title">System Availability (Uptime SLA)</div><span class="sm-val" id="v-uptime">99.9%</span></div>
+              <div class="sm-desc">Minimum % uptime for the AI agent in production</div>
+              <input type="range" min="90" max="100" value="99.9" step="0.1" oninput="document.getElementById('v-uptime').textContent=this.value+'%'">
+            </div>
+            <div class="fg" style="margin-top:14px;"><div class="fl">ADDITIONAL BUSINESS-SPECIFIC METRICS</div><textarea class="ft" id="ms1-custom" placeholder="Define KPIs specific to your agent's purpose. E.g., 'Mean response latency < 2 seconds. Customer satisfaction score (CSAT) > 4.0/5. Escalation rate to human agents < 15%. Contract review time reduction ≥ 40%.'" oninput="updateProgress()"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="ms2">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--mea-bg)">🧪</div>
+          <div class="pc-meta">
+            <div class="pc-code">MS-2 · NIST AI RMF MEASURE 2.1–2.13</div>
+            <div class="pc-title">Testing, Evaluation & Red-Teaming Plan</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">PRE-DEPLOYMENT TESTING REQUIREMENTS</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Functional accuracy testing against a representative benchmark dataset</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Red-team / adversarial testing: prompt injection, jailbreak, and manipulation attempts</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Policy compliance testing across prohibited use categories</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Edge case and out-of-distribution input testing</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Integration / system testing with all connected tools and data sources</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">User acceptance testing (UAT) with representative user groups</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Load and performance testing at expected production scale</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Penetration testing / security review of AI components</span></label>
+              </div>
+            </div>
+            <div class="fr">
+              <div class="fg"><div class="fl">AUTOMATED TEST CADENCE</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option value="">Select...</option>
+                  <option>Continuous (CI/CD pipeline)</option>
+                  <option>Daily regression suite</option>
+                  <option>Weekly automated eval</option>
+                  <option>Monthly batch evaluation</option>
+                </select>
+              </div>
+              <div class="fg"><div class="fl">HUMAN REVIEW CADENCE</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option value="">Select...</option>
+                  <option>Weekly sample review (5–10%)</option>
+                  <option>Monthly audit</option>
+                  <option>Quarterly full evaluation</option>
+                  <option>Semi-annual independent review</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">RESPONSIBLE DISCLOSURE / BUG BOUNTY</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Public responsible disclosure channel for AI safety issues</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Internal bug bounty or reward program for finding AI vulnerabilities</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Third-party independent security / AI audit scheduled</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="ms3">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--mea-bg)">⚖️</div>
+          <div class="pc-meta">
+            <div class="pc-code">MS-3 · NIST AI RMF MEASURE 2.5–2.6</div>
+            <div class="pc-title">Bias, Fairness & Explainability Testing</div>
+          </div>
+          <span class="pc-priority pri-med">IMPORTANT</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">BIAS TESTING DIMENSIONS</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Demographic parity: consistent quality of outputs across race, gender, age, national origin</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Linguistic equity: equal performance for non-standard English dialects and non-English languages</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Counterfactual fairness: identical inputs with only protected attribute changed produce equivalent outputs</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Adverse impact analysis: no statistically significant disparate impact on protected groups</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Accessibility: outputs are usable by people with disabilities</span></label>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">EXPLAINABILITY REQUIREMENTS</div>
+              <select class="fs" onchange="updateProgress()">
+                <option value="">Select explainability level...</option>
+                <option>None required — informational / assistive only, no automated decisions</option>
+                <option>Post-hoc — explanations available on request from users or auditors</option>
+                <option>Inline — brief rationale provided with each significant AI output</option>
+                <option>Full audit log — complete reasoning chain logged for all decisions</option>
+                <option>Regulatory-grade — conforms to right-to-explanation under GDPR Art. 22 / EU AI Act</option>
+              </select>
+            </div>
+            <div class="fg"><div class="fl">BIAS TESTING METHODOLOGY</div><textarea class="ft" placeholder="Describe how you will test for bias. E.g., 'Maintain a curated dataset of 1,000 diverse test prompts. Run with demographic attribute variations. Statistical analysis for disparate impact. Annual external bias audit by third-party firm.'" oninput="updateProgress()"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="ms4">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--mea-bg)">📡</div>
+          <div class="pc-meta">
+            <div class="pc-code">MS-4 · NIST AI RMF MEASURE 4.1–4.2</div>
+            <div class="pc-title">Production Monitoring & Alerting Plan</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">MONITORING SIGNALS TO TRACK</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Content policy violation rate (policy filter trigger frequency)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">User complaint and negative feedback rate</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Human escalation / override rate (signals model is failing)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Output distribution drift (detecting model or behavior changes)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Latency and availability metrics</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Data access anomalies (unexpected data requests by agent)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Prompt injection attempt detection</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Periodic random sample human review findings</span></label>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">AUTOMATED ALERT THRESHOLDS & ACTIONS</div><textarea class="ft" placeholder="Define thresholds triggering automatic alerts or service pause. E.g., 'If policy violation rate exceeds 0.5% in any 24hr window: alert AI Safety Lead. If > 1%: pause service and escalate to executive sponsor.'" oninput="updateProgress()"></textarea></div>
+            <div class="fg"><div class="fl">MONITORING TOOLING</div>
+              <select class="fs" onchange="updateProgress()">
+                <option value="">Select monitoring approach...</option>
+                <option>Custom logging / observability stack (e.g., Datadog, Splunk)</option>
+                <option>AI-specific evaluation platform (e.g., Langfuse, Helicone, Arize)</option>
+                <option>LLM provider native monitoring</option>
+                <option>Manual review workflows only</option>
+                <option>Combination of automated and manual</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- ========== MANAGE PAGE ========== -->
+<div id="page-manage" class="page">
+<div class="inner-layout">
+  <aside>
+    <div class="sb-section">
+      <div class="sb-head">MANAGE</div>
+      <div class="sb-item active" onclick="openCard('mg1')"><div class="sb-dot" style="background:var(--man-c)"></div><div class="sb-label">MG-1 · Risk Treatment</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('mg2')"><div class="sb-dot" style="background:var(--man-c)"></div><div class="sb-label">MG-2 · Technical Controls</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('mg3')"><div class="sb-dot" style="background:var(--man-c)"></div><div class="sb-label">MG-3 · Incident Response Plan</div><span class="sb-badge b-todo">TODO</span></div>
+      <div class="sb-item" onclick="openCard('mg4')"><div class="sb-dot" style="background:var(--man-c)"></div><div class="sb-label">MG-4 · Residual Risk & Deployment</div><span class="sb-badge b-todo">TODO</span></div>
+    </div>
+  </aside>
+  <main>
+    <div class="page-head">
+      <div>
+        <div class="ph-eyebrow" style="color:var(--man-c)">FUNCTION 04 · MANAGE</div>
+        <div class="ph-title">Risk Treatment & Response</div>
+        <div class="ph-desc">Implement controls, mitigations, and response plans to treat identified and measured risks in your GenAI agent.</div>
+      </div>
+      <div class="pring">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle class="pring-bg" cx="35" cy="35" r="29"/>
+          <circle class="pring-fill" cx="35" cy="35" r="29" stroke="var(--man-c)" stroke-dasharray="182.2" stroke-dashoffset="182.2" id="ring-manage"/>
+        </svg>
+        <div class="pring-inner">
+          <div class="pring-pct" id="pct-manage" style="color:var(--man-c)">0%</div>
+          <div class="pring-sub">MANAGE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="policy-stack">
+      <div class="pc" id="mg1">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--man-bg)">🎯</div>
+          <div class="pc-meta">
+            <div class="pc-code">MG-1 · NIST AI RMF MANAGE 1.1–1.4</div>
+            <div class="pc-title">Risk Prioritization & Treatment Selection</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">For each major risk category, select your treatment strategy. Multiple strategies can be combined.</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Hallucination & Factual Accuracy Risk</div>
+                <select class="fs" onchange="updateProgress()" style="margin-bottom:8px;">
+                  <option>MITIGATE — Retrieval-augmented generation (RAG); source citations required; confidence scoring</option>
+                  <option>MITIGATE — Human review of high-stakes outputs before delivery</option>
+                  <option>AVOID — Restrict agent to tasks where factual accuracy is verifiable</option>
+                  <option>ACCEPT — Low-stakes use case; errors are easily corrected by users</option>
+                </select>
+              </div>
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Bias & Discriminatory Output Risk</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option>MITIGATE — Regular bias testing; diverse training/eval data; bias-aware prompting</option>
+                  <option>AVOID — Do not use AI in high-stakes demographic decisions without extensive validation</option>
+                  <option>TRANSFER — Use a third-party certified bias-audited model for these use cases</option>
+                  <option>ACCEPT — Low-impact advisory use; bias testing shows acceptable levels</option>
+                </select>
+              </div>
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Data Privacy & PII Risk</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option>MITIGATE — PII redaction before prompt; encryption; data minimization; DPA with vendor</option>
+                  <option>AVOID — Do not allow PII to enter AI prompts; route to separate non-AI flow</option>
+                  <option>TRANSFER — Use zero-data-retention API; on-premise deployment for sensitive data</option>
+                  <option>ACCEPT — No PII in scope; agent operates on non-personal data only</option>
+                </select>
+              </div>
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Prompt Injection & Security Risk</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option>MITIGATE — Input sanitization; output validation; principle of least privilege for tool access</option>
+                  <option>MITIGATE — Sandboxed execution environment; no external network access from agent</option>
+                  <option>AVOID — Do not allow agent to execute code or call external APIs without human approval</option>
+                </select>
+              </div>
+              <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:14px;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Regulatory / Legal Compliance Risk</div>
+                <select class="fs" onchange="updateProgress()">
+                  <option>MITIGATE — Legal review of policy; AI Act conformity assessment; regular compliance audits</option>
+                  <option>TRANSFER — Engage external AI compliance counsel or GRC firm</option>
+                  <option>AVOID — Do not deploy in regulated context until compliance confirmed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="mg2">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--man-bg)">🛡️</div>
+          <div class="pc-meta">
+            <div class="pc-code">MG-2 · NIST AI RMF MANAGE 2.1–2.4</div>
+            <div class="pc-title">Technical & Operational Controls</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">SYSTEM-LEVEL GUARDRAILS IMPLEMENTED</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">System prompt policy constraints covering prohibited content and behaviors</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Output filtering layer for policy compliance (e.g., content moderation API)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Input sanitization to prevent prompt injection</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Role-based access control (RBAC) limiting what the AI agent can access</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Rate limiting and abuse detection</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Fallback behavior when model confidence is low (escalate to human)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Kill switch / circuit breaker to disable AI agent instantly</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Full interaction audit logging with tamper-proof storage</span></label>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">USER-FACING CONTROLS & TRANSPARENCY</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">AI identity disclosure (clearly labeled as AI at all interaction points)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">User feedback mechanism (flag / rate any AI output)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Human handoff option always available to users</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Users can request deletion of their interaction data</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Appeal / correction mechanism for AI decisions affecting users</span></label>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">SYSTEM PROMPT / CORE POLICY CONSTRAINTS</div><textarea class="ft" id="mg2-sysprompt" placeholder="Document the key policy constraints embedded in your AI system prompt. E.g., 'Always identify as an AI. Never provide specific legal, medical, or financial advice. Always recommend consulting a professional for high-stakes decisions. Never store sensitive customer information beyond the session.'" oninput="updateProgress()"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="mg3">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--man-bg)">🚨</div>
+          <div class="pc-meta">
+            <div class="pc-code">MG-3 · NIST AI RMF MANAGE 3.1–3.2</div>
+            <div class="pc-title">Incident Response & Notification Plan</div>
+          </div>
+          <span class="pc-priority pri-high">REQUIRED</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">INCIDENT SEVERITY CLASSIFICATION</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="background:#fdf3f2;border:1px solid #f5c6c2;border-left:3px solid var(--red);border-radius:2px;padding:12px;">
+                  <div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:4px;letter-spacing:.05em;">CRITICAL — Immediate Action Required</div>
+                  <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">AI causes or enables direct harm to a person; unauthorized access to regulated data; major public safety or legal violation; system used for clearly illegal purpose</p>
+                  <input class="fi" placeholder="Response SLA (e.g., immediate / within 1 hour)" style="font-size:12px;" oninput="updateProgress()">
+                </div>
+                <div style="background:#fdf8ed;border:1px solid #f5e0a0;border-left:3px solid var(--amber);border-radius:2px;padding:12px;">
+                  <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:4px;letter-spacing:.05em;">HIGH — Same Business Day Response</div>
+                  <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Systemic policy violations; confirmed bias affecting a user group; privacy incident (potential PII exposure); significant reputational risk; multiple user complaints about harmful output</p>
+                  <input class="fi" placeholder="Response SLA (e.g., within 4–8 hours)" style="font-size:12px;" oninput="updateProgress()">
+                </div>
+                <div style="background:#fdf8f0;border:1px solid #e8d8b0;border-left:3px solid #c88020;border-radius:2px;padding:12px;">
+                  <div style="font-size:11px;font-weight:600;color:#c88020;margin-bottom:4px;letter-spacing:.05em;">MEDIUM — 48-Hour Response</div>
+                  <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Isolated policy violation; accuracy below threshold; user complaint with no clear harm; performance degradation; model drift detected</p>
+                  <input class="fi" placeholder="Response SLA (e.g., within 48 hours)" style="font-size:12px;" oninput="updateProgress()">
+                </div>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">EXTERNAL NOTIFICATION OBLIGATIONS</div>
+              <div class="cg">
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Notify affected individuals within 72 hours of confirmed personal data breach (GDPR Art. 33/34, CCPA)</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Report to relevant data protection authority within 72 hours if high-risk data breach</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Notify AI provider (e.g., Anthropic, OpenAI) of safety incidents per their terms</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Publish annual AI transparency / incident summary report</span></label>
+                <label class="ci"><input type="checkbox" onchange="updateProgress()"><span class="ci-text">Notify enterprise customers within agreed SLA if their data or users are affected</span></label>
+              </div>
+            </div>
+            <div class="fg"><div class="fl">POST-INCIDENT REVIEW PROCESS</div><textarea class="ft" placeholder="Describe your post-incident process. E.g., 'Root cause analysis within 5 business days. Corrective action plan within 10 days. Lessons-learned doc shared with AI steering committee. Policy update triggered if systemic issue identified.'" style="min-height:70px;" oninput="updateProgress()"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pc" id="mg4">
+        <div class="pc-head" onclick="toggleCard(this)">
+          <div class="pc-icon" style="background:var(--man-bg)">📌</div>
+          <div class="pc-meta">
+            <div class="pc-code">MG-4 · NIST AI RMF MANAGE 4.1–4.2</div>
+            <div class="pc-title">Residual Risk, Acceptance & Deployment Decision</div>
+          </div>
+          <span class="pc-priority pri-med">IMPORTANT</span>
+          <span class="pc-chev">▶</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-inner">
+            <div class="fg"><div class="fl">RESIDUAL RISK STATEMENT</div><textarea class="ft" id="mg4-residual" placeholder="Document risks that cannot be fully mitigated and are being accepted. Be explicit. E.g., 'The agent may occasionally produce inaccurate information for rare query types. This residual risk is accepted given the advisory-only nature of outputs and the mandatory human review step for consequential decisions.'" oninput="updateProgress()"></textarea></div>
+            <div class="fg"><div class="fl">DEPLOYMENT LIMITATIONS / CONDITIONS</div><textarea class="ft" id="mg4-conditions" placeholder="Document any conditions on deployment. E.g., 'Deploy only to internal users in Phase 1. External deployment requires additional bias testing. Features X and Y remain disabled pending legal review.'" style="min-height:70px;" oninput="updateProgress()"></textarea></div>
+            <div class="fr">
+              <div class="fg"><div class="fl">RISK ACCEPTANCE AUTHORITY</div><input class="fi" placeholder="Name and title of approving executive" oninput="updateProgress()"></div>
+              <div class="fg"><div class="fl">ACCEPTANCE DATE</div><input class="fi" type="date" oninput="updateProgress()"></div>
+            </div>
+            <div class="fg"><div class="fl">DEPLOYMENT DECISION</div>
+              <select class="fs" id="mg4-deploy" onchange="updateProgress()">
+                <option value="">Select deployment decision...</option>
+                <option value="approved">✅ APPROVED — Deploy with all specified controls in place</option>
+                <option value="conditional">⚠️ CONDITIONAL APPROVAL — Deploy with specified limitations only</option>
+                <option value="pilot">🔬 PILOT ONLY — Limited deployment for further real-world evaluation</option>
+                <option value="pending">🔄 PENDING — Additional mitigations or approvals required</option>
+                <option value="rejected">❌ NOT APPROVED — Risk too high; redesign or additional controls required</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- ========== GENERATE PAGE ========== -->
+<div id="page-generate" class="page">
+<div class="gen-wrap">
+  <div class="gen-head">
+    <div class="ph-eyebrow">POLICY GENERATION</div>
+    <div class="gen-title">Generate Your AI Policy</div>
+    <p class="gen-sub">Review your completion progress across all four RMF functions, configure your output, and generate a professional compliance document using Claude AI.</p>
+  </div>
+
+  <!-- COMPLETION STATUS -->
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--muted);margin-bottom:14px;">FRAMEWORK COMPLETION STATUS</div>
+  <div class="completion-grid" style="margin-bottom:28px;">
+    <div class="cg-card">
+      <div class="cg-label" style="color:var(--gov-c)">GOVERN</div>
+      <svg class="cg-ring" width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="24" fill="none" stroke="var(--rule)" stroke-width="4"/>
+        <circle cx="30" cy="30" r="24" fill="none" stroke="var(--gov-c)" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="150.8" stroke-dashoffset="150.8" id="cring-govern" style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .8s ease;"/>
+      </svg>
+      <div class="cg-pct" id="cpct-govern" style="color:var(--gov-c)">0%</div>
+    </div>
+    <div class="cg-card">
+      <div class="cg-label" style="color:var(--map-c)">MAP</div>
+      <svg class="cg-ring" width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="24" fill="none" stroke="var(--rule)" stroke-width="4"/>
+        <circle cx="30" cy="30" r="24" fill="none" stroke="var(--map-c)" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="150.8" stroke-dashoffset="150.8" id="cring-map" style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .8s ease;"/>
+      </svg>
+      <div class="cg-pct" id="cpct-map" style="color:var(--map-c)">0%</div>
+    </div>
+    <div class="cg-card">
+      <div class="cg-label" style="color:var(--mea-c)">MEASURE</div>
+      <svg class="cg-ring" width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="24" fill="none" stroke="var(--rule)" stroke-width="4"/>
+        <circle cx="30" cy="30" r="24" fill="none" stroke="var(--mea-c)" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="150.8" stroke-dashoffset="150.8" id="cring-measure" style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .8s ease;"/>
+      </svg>
+      <div class="cg-pct" id="cpct-measure" style="color:var(--mea-c)">0%</div>
+    </div>
+    <div class="cg-card">
+      <div class="cg-label" style="color:var(--man-c)">MANAGE</div>
+      <svg class="cg-ring" width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="24" fill="none" stroke="var(--rule)" stroke-width="4"/>
+        <circle cx="30" cy="30" r="24" fill="none" stroke="var(--man-c)" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="150.8" stroke-dashoffset="150.8" id="cring-manage" style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .8s ease;"/>
+      </svg>
+      <div class="cg-pct" id="cpct-manage" style="color:var(--man-c)">0%</div>
+    </div>
+  </div>
+
+  <!-- OPTIONS -->
+  <div class="options-card">
+    <div class="oc-title">POLICY DOCUMENT OPTIONS</div>
+    <div class="options-grid">
+      <div>
+        <div class="fl">DOCUMENT TYPE</div>
+        <select class="fs" id="gen-type">
+          <option>Comprehensive AI Risk Policy</option>
+          <option>Executive Risk Summary (2-page)</option>
+          <option>Technical Implementation Guide</option>
+          <option>AI Risk Register</option>
+          <option>Regulatory Compliance Brief</option>
+          <option>Board / Audit Committee Report</option>
+        </select>
+      </div>
+      <div>
+        <div class="fl">TARGET AUDIENCE</div>
+        <select class="fs" id="gen-audience">
+          <option>Legal, Compliance & Risk Teams</option>
+          <option>Executive Leadership / Board</option>
+          <option>Technical / Engineering Teams</option>
+          <option>External Auditors / Regulators</option>
+          <option>All Stakeholders (Comprehensive)</option>
+        </select>
+      </div>
+      <div>
+        <div class="fl">REGULATORY EMPHASIS</div>
+        <select class="fs" id="gen-reg">
+          <option>NIST AI RMF (primary)</option>
+          <option>EU AI Act compliance focus</option>
+          <option>GDPR / Privacy-first</option>
+          <option>ISO 42001 alignment</option>
+          <option>Multi-framework (all applicable)</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <div class="fl">ADDITIONAL INSTRUCTIONS FOR CLAUDE</div>
+      <textarea class="ft" id="gen-extra" placeholder="Any additional emphasis, specific risks to highlight, tone preferences, sections to include or exclude, or context about your compliance environment..."></textarea>
+    </div>
+  </div>
+
+  <button class="gen-btn" onclick="generatePolicy()">
+    <span>✦</span>
+    GENERATE POLICY DOCUMENT WITH CLAUDE
+    <span style="opacity:0.5">→</span>
+  </button>
+
+  <div id="policy-output">
+    <div class="out-head">
+      <span class="out-label">✦ GENERATED AI POLICY DOCUMENT — NIST AI RMF 1.0</span>
+      <div class="out-actions">
+        <button class="btn-sm" onclick="copyPolicy()">COPY TEXT</button>
+        <button class="btn-sm" onclick="downloadPolicy()">DOWNLOAD .TXT</button>
+      </div>
+    </div>
+    <div id="policy-text"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ======= NAVIGATION =======
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+  if (name === 'generate') updateProgress();
+}
+
+// ======= INDUSTRY TOGGLE =======
+function toggleIndustry(el) { el.classList.toggle('selected'); }
+function getSelectedIndustries() {
+  return Array.from(document.querySelectorAll('.industry-chip.selected')).map(c => c.dataset.val).join(', ');
+}
+
+// ======= CARD COLLAPSE =======
+function toggleCard(head) {
+  const body = head.nextElementSibling;
+  const chev = head.querySelector('.pc-chev');
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+function openCard(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const body = el.querySelector('.pc-body');
+  const chev = el.querySelector('.pc-chev');
+  if (!body.classList.contains('open')) { body.classList.add('open'); chev.classList.add('open'); }
+}
+
+// ======= PROGRESS =======
+const pState = { govern: 0, map: 0, measure: 0, manage: 0 };
+function countPage(pageId) {
+  const pg = document.getElementById(pageId);
+  if (!pg) return { f: 0, t: 0 };
+  let f = 0, t = 0;
+  // text inputs, selects, textareas (not range)
+  pg.querySelectorAll('input:not([type=checkbox]):not([type=range]), select, textarea').forEach(el => {
+    t++;
+    if (el.value && el.value.trim() !== '') f++;
+  });
+  // checkbox groups — each group counts as 1 field
+  pg.querySelectorAll('.cg').forEach(group => {
+    t++;
+    if (group.querySelector('input[type=checkbox]:checked')) f++;
+  });
+  return { f, t };
+}
+function updateProgress() {
+  const map = [
+    { pg: 'page-govern', key: 'govern', ring: 'ring-govern', pct: 'pct-govern', cr: 'cring-govern', cp: 'cpct-govern' },
+    { pg: 'page-map',    key: 'map',    ring: 'ring-map',    pct: 'pct-map',    cr: 'cring-map',    cp: 'cpct-map' },
+    { pg: 'page-measure',key: 'measure',ring: 'ring-measure',pct: 'pct-measure',cr: 'cring-measure',cp: 'cpct-measure' },
+    { pg: 'page-manage', key: 'manage', ring: 'ring-manage', pct: 'pct-manage', cr: 'cring-manage', cp: 'cpct-manage' },
+  ];
+  map.forEach(({ pg, key, ring, pct, cr, cp }) => {
+    const { f, t } = countPage(pg);
+    const p = t > 0 ? Math.min(100, Math.round((f / t) * 100)) : 0;
+    pState[key] = p;
+    const setRing = (id, circ) => {
+      const el = document.getElementById(id);
+      if (el) el.style.strokeDashoffset = circ - (p / 100) * circ;
+    };
+    setRing(ring, 182.2);
+    setRing(cr, 150.8);
+    const pe = document.getElementById(pct); if (pe) pe.textContent = p + '%';
+    const cpe = document.getElementById(cp); if (cpe) cpe.textContent = p + '%';
+  });
+}
+window.addEventListener('load', () => setTimeout(updateProgress, 200));
+document.addEventListener('change', updateProgress);
+document.addEventListener('input', updateProgress);
+
+// ======= GENERATE =======
+async function generatePolicy() {
+  const name = document.getElementById('agent-name').value || 'GenAI Agent';
+  const org = document.getElementById('agent-org').value || '[Organization]';
+  const model = document.getElementById('agent-model').value || 'Large Language Model';
+  const purpose = document.getElementById('agent-purpose').value || '';
+  const outscope = document.getElementById('agent-outscope').value || '';
+  const industries = getSelectedIndustries() || 'Not specified';
+  const euTier = document.getElementById('gv1-eu-tier')?.value || '';
+  const oversight = document.getElementById('gv2-oversight')?.value || '';
+  const riskTol = document.getElementById('gv3-tol')?.value || '';
+  const vendors = document.getElementById('gv6-vendors')?.value || '';
+  const sysprompt = document.getElementById('mg2-sysprompt')?.value || '';
+  const residual = document.getElementById('mg4-residual')?.value || '';
+  const deployment = document.getElementById('mg4-deploy')?.value || '';
+  const docType = document.getElementById('gen-type').value;
+  const audience = document.getElementById('gen-audience').value;
+  const regEmphasis = document.getElementById('gen-reg').value;
+  const extra = document.getElementById('gen-extra').value;
+
+  // Collect checked items across all pages
+  const checked = (pageId) => Array.from(
+    document.querySelectorAll(`#${pageId} input[type=checkbox]:checked`)
+  ).map(c => c.closest('.ci')?.querySelector('.ci-text')?.textContent?.trim() || c.value).filter(Boolean);
+
+  const govChecked = checked('page-govern');
+  const mapChecked = checked('page-map');
+  const meaChecked = checked('page-measure');
+  const manChecked = checked('page-manage');
+
+  // Metrics
+  const metrics = {
+    accuracy: document.getElementById('v-accuracy')?.textContent,
+    policy: document.getElementById('v-policy')?.textContent,
+    harmful: document.getElementById('v-harmful')?.textContent,
+    task: document.getElementById('v-task')?.textContent,
+    uptime: document.getElementById('v-uptime')?.textContent,
+  };
+
+  const outputEl = document.getElementById('policy-output');
+  const textEl = document.getElementById('policy-text');
+  outputEl.style.display = 'block';
+  textEl.innerHTML = '<div class="loading">Generating policy document with Claude <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+  outputEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const prompt = `You are a senior AI governance consultant and legal compliance expert specializing in the NIST AI Risk Management Framework (AI RMF 1.0), EU AI Act, ISO 42001, GDPR, and enterprise AI policy development.
+
+Generate a professional ${docType} for the following GenAI agent deployment, targeted at: ${audience}. Regulatory emphasis: ${regEmphasis}.
+
+═══════════════════════════════════
+AGENT OVERVIEW
+═══════════════════════════════════
+Agent / Product Name: ${name}
+Organization: ${org}
+Underlying Model / Provider: ${model}
+Industry / Sector: ${industries}
+EU AI Act Risk Tier: ${euTier || 'To be determined'}
+Human Oversight Model: ${oversight || 'To be determined'}
+Risk Tolerance: ${riskTol || 'To be determined'}
+
+PURPOSE:
+${purpose || 'General-purpose enterprise GenAI agent for business process automation and assistance.'}
+
+PROHIBITED USES:
+${outscope || 'To be defined.'}
+
+AI VENDORS & THIRD-PARTY COMPONENTS:
+${vendors || 'To be documented.'}
+
+═══════════════════════════════════
+GOVERNANCE (GOVERN) — SELECTED CONTROLS
+═══════════════════════════════════
+${govChecked.length > 0 ? govChecked.map(c => '• ' + c).join('\n') : '• Standard governance controls apply.'}
+
+═══════════════════════════════════
+RISK IDENTIFICATION (MAP) — KEY RISKS IDENTIFIED
+═══════════════════════════════════
+${mapChecked.length > 0 ? mapChecked.map(c => '• ' + c).join('\n') : '• Standard AI risk categories under assessment.'}
+
+═══════════════════════════════════
+RISK METRICS (MEASURE) — PERFORMANCE THRESHOLDS
+═══════════════════════════════════
+• Output Accuracy Threshold: ${metrics.accuracy}
+• Policy Compliance Rate: ${metrics.policy}
+• Maximum Harmful Output Rate: ${metrics.harmful}
+• Task Completion Rate: ${metrics.task}
+• System Uptime SLA: ${metrics.uptime}
+
+Testing & Monitoring Controls Selected:
+${meaChecked.length > 0 ? meaChecked.map(c => '• ' + c).join('\n') : '• Standard testing protocols apply.'}
+
+═══════════════════════════════════
+CONTROLS & RESPONSE (MANAGE)
+═══════════════════════════════════
+System Prompt Constraints:
+${sysprompt || 'To be documented per system design.'}
+
+Operational Controls Selected:
+${manChecked.length > 0 ? manChecked.map(c => '• ' + c).join('\n') : '• Standard operational controls apply.'}
+
+Residual Risk Statement:
+${residual || 'Residual risks to be formally documented before deployment.'}
+
+Deployment Decision: ${deployment || 'Pending review.'}
+
+═══════════════════════════════════
+ADDITIONAL INSTRUCTIONS
+═══════════════════════════════════
+${extra || 'None.'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Generate a formal, professional ${docType} structured as follows:
+
+1. DOCUMENT HEADER — Title, version, date, classification, owner
+2. EXECUTIVE SUMMARY — 3-4 paragraphs: agent purpose, risk profile, key controls, deployment decision
+3. SECTION 1: AI SYSTEM DESCRIPTION — Purpose, capabilities, prohibited uses, technical architecture overview, data processed
+4. SECTION 2: REGULATORY & COMPLIANCE CONTEXT — Applicable laws and standards (based on industry and selections above); specific obligations; EU AI Act classification if applicable
+5. SECTION 3: GOVERN — Policies, accountability structure, roles & responsibilities, risk tolerance, workforce requirements, third-party governance
+6. SECTION 4: MAP — Risk identification; stakeholder analysis; affected populations; full risk taxonomy with severity assessment for each identified category; benefits and harms analysis
+7. SECTION 5: MEASURE — Performance metrics and thresholds; testing and evaluation requirements; bias and fairness testing plan; production monitoring framework with KPIs
+8. SECTION 6: MANAGE — Risk treatment decisions per category (avoid/mitigate/transfer/accept); technical controls; system prompt policy constraints; incident response plan with severity levels and SLAs; notification obligations
+9. SECTION 7: RESIDUAL RISK & DEPLOYMENT DECISION — Formal residual risk statement; conditions on deployment; sign-off authority
+10. SECTION 8: POLICY MAINTENANCE — Review triggers and schedule; version control; continuous improvement commitments
+11. APPENDIX A: NIST AI RMF FUNCTION CHECKLIST — Summary table of completed vs. outstanding items
+12. APPENDIX B: GLOSSARY OF KEY TERMS
+
+Write in clear, formal, legally-defensible language appropriate for a compliance document. Use numbered provisions where appropriate. Be specific to the agent's stated purpose and industry. Avoid generic filler — make every section actionable and specific.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || 'API error ' + resp.status); }
+    const data = await resp.json();
+    const text = data.content.filter(c => c.type === 'text').map(c => c.text).join('');
+    textEl.textContent = text;
+    window._policyText = text;
+  } catch(err) {
+    textEl.innerHTML = `<span style="color:var(--red);font-weight:600;">Error: ${err.message}</span>\n\n<span style="color:var(--muted)">Please check your network connection and try again. All form data is preserved — you can retry without re-entering information.</span>`;
+  }
+}
+
+function copyPolicy() {
+  const t = document.getElementById('policy-text').textContent;
+  navigator.clipboard.writeText(t).then(() => {
+    const b = event.target; b.textContent = 'COPIED ✓';
+    setTimeout(() => b.textContent = 'COPY TEXT', 2000);
+  });
+}
+
+function downloadPolicy() {
+  const t = document.getElementById('policy-text').textContent;
+  const n = (document.getElementById('agent-name').value || 'GenAI-Agent').replace(/\s+/g, '-');
+  const blob = new Blob([t], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `${n}-NIST-RMF-Policy-${new Date().toISOString().slice(0,10)}.txt`;
+  a.click(); URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
